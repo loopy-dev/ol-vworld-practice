@@ -1,9 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import Marker from './ol-marker';
 
-const OlMap = dynamic(() => import('./ol-map'), { ssr: false });
+const OlMap = dynamic(() => import('./map'), { ssr: false });
 
 const OlMapPage = () => {
   return (
