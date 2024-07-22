@@ -1,5 +1,5 @@
-import { useEffect, useId, useState } from 'react';
-import { Map, View } from 'ol';
+import { useEffect, useId } from 'react';
+import { Map as OlMap, View } from 'ol';
 import TileLayer from 'ol/layer/Tile';
 import { XYZ } from 'ol/source';
 import 'ol/ol.css';
@@ -7,11 +7,15 @@ import 'ol/ol.css';
 const MAP_URL = `https://api.vworld.kr/req/wmts/1.0.0/${process.env.NEXT_PUBLIC_VWORLD_API_KEY}/Base/{z}/{y}/{x}.png`;
 
 interface Props {
-  center?: [number, number];
+  center?: {
+    lat: number;
+    lng: number;
+  };
 }
 
-const OlMap = ({ center = [14135490.777017945, 4518386.883679577] }: Props) => {
-  const [map, setMap] = useState<Map | null>(null);
+const Map = ({
+  center = { lng: 14135490.777017945, lat: 4518386.883679577 },
+}: Props) => {
   const id = useId();
 
   // init
@@ -34,11 +38,11 @@ const OlMap = ({ center = [14135490.777017945, 4518386.883679577] }: Props) => {
 
     const view = new View({
       projection: 'EPSG:3857',
-      center,
+      center: [center.lng, center.lat],
       zoom: 17,
     });
 
-    const initialMap = new Map({
+    const initialMap = new OlMap({
       target: 'ol-map'.concat(id),
       layers: [vworldBaseLayer],
       view,
@@ -47,7 +51,7 @@ const OlMap = ({ center = [14135490.777017945, 4518386.883679577] }: Props) => {
     return () => {
       initialMap.setTarget(undefined);
     };
-  }, [id]);
+  }, [center, id]);
 
   return (
     <div
@@ -58,4 +62,4 @@ const OlMap = ({ center = [14135490.777017945, 4518386.883679577] }: Props) => {
   );
 };
 
-export default OlMap;
+export default Map;
