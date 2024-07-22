@@ -1,4 +1,4 @@
-import { useEffect, useId } from 'react';
+import React, { useEffect, useMemo, useRef, createContext } from 'react';
 import { Map as OlMap, View } from 'ol';
 import TileLayer from 'ol/layer/Tile';
 import { XYZ } from 'ol/source';
@@ -6,25 +6,33 @@ import 'ol/ol.css';
 
 const MAP_URL = `https://api.vworld.kr/req/wmts/1.0.0/${process.env.NEXT_PUBLIC_VWORLD_API_KEY}/Base/{z}/{y}/{x}.png`;
 
+interface MapContext {
+  map: OlMap;
+}
+
+const MapContext = createContext({} as MapContext);
+
 interface Props {
-  center?: {
-    lat: number;
-    lng: number;
+  initial?: {
+    center?: {
+      lat: number;
+      lng: number;
+    };
+    zoom?: number;
   };
+  children?: React.ReactNode;
+  width: number | string;
+  height: number | string;
 }
 
 const Map = ({
-  center = { lng: 14135490.777017945, lat: 4518386.883679577 },
+  initial = { center: { lng: 14135490.777017945, lat: 4518386.883679577 } },
+  width,
+  height,
+  children,
 }: Props) => {
-  const id = useId();
-
-  // init
-  /**
-   * 1. center값 입력받을 수 있도록
-   */
-  useEffect(() => {
-    if (!id) return;
-
+  const targetRef = useRef<HTMLDivElement | null>(null);
+  const map = useMemo(() => {
     const vworldBaseLayer = new TileLayer({
       source: new XYZ({
         url: MAP_URL,
@@ -36,29 +44,38 @@ const Map = ({
       preload: Infinity,
     });
 
+    const center = initial.center
+      ? [initial.center.lng, initial.center.lat]
+      : [14135490.777017945, 4518386.883679577];
+
     const view = new View({
       projection: 'EPSG:3857',
-      center: [center.lng, center.lat],
+      center,
       zoom: 17,
     });
 
     const initialMap = new OlMap({
-      target: 'ol-map'.concat(id),
       layers: [vworldBaseLayer],
       view,
     });
 
+    return initialMap;
+  }, [initial.center]);
+
+  useEffect(() => {
+    if (map && targetRef.current) {
+      map.setTarget(targetRef.current);
+    }
+
     return () => {
-      initialMap.setTarget(undefined);
+      map.setTarget(undefined);
     };
-  }, [center, id]);
+  }, [map]);
 
   return (
-    <div
-      className="relative"
-      id={'ol-map'.concat(id)}
-      style={{ width: '600px', height: '600px' }}
-    />
+    <div ref={targetRef} className="relative" style={{ width, height }}>
+      <MapContext.Provider value={{ map }}>{children}</MapContext.Provider>
+    </div>
   );
 };
 
