@@ -12,20 +12,24 @@ export const VectorLayerContext = createContext({} as VectorLayerContext);
 
 interface Props {
   zIndex?: number;
+  minZoom?: number;
+  maxZoom?: number;
   children?: React.ReactNode;
 }
 
-const VectorLayer = ({ zIndex, children }: Props) => {
+const VectorLayer = ({ zIndex, minZoom, maxZoom, children }: Props) => {
   const mapContext = useContext(MapContext);
   const vectorSource = useMemo(() => new VectorSource(), []);
   const vectorLayer = useMemo(() => {
     const initialVectorLayer = new OlVectorLayer({
       source: vectorSource,
+      minZoom,
+      maxZoom,
       zIndex,
     });
 
     return initialVectorLayer;
-  }, [vectorSource, zIndex]);
+  }, [maxZoom, minZoom, vectorSource, zIndex]);
 
   useUpdateLayer(mapContext.map, vectorLayer);
 

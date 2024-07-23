@@ -17,6 +17,8 @@ interface Props {
     zoom?: number;
   };
   children?: React.ReactNode;
+  minZoom?: number;
+  maxZoom?: number;
   width: number | string;
   height: number | string;
 }
@@ -25,17 +27,21 @@ const Map = ({
   initial = { center: { lng: 14135490.777017945, lat: 4518386.883679577 } },
   width,
   height,
+  minZoom,
+  maxZoom,
   children,
 }: Props) => {
   const targetRef = useRef<HTMLDivElement | null>(null);
   const map = useMemo(() => {
     const center = initial.center
       ? [initial.center.lng, initial.center.lat]
-      : [14135490.777017945, 4518386.883679577];
+      : [14135126.30194829, 4518366.509981735];
 
     const view = new View({
       projection: 'EPSG:3857',
       center,
+      minZoom,
+      maxZoom,
       zoom: 17,
     });
 
@@ -45,7 +51,7 @@ const Map = ({
     });
 
     return initialMap;
-  }, [initial.center]);
+  }, [initial.center, maxZoom, minZoom]);
 
   useEffect(() => {
     if (map && targetRef.current) {

@@ -1,29 +1,25 @@
-import { useEffect } from 'react';
+import { useContext, useEffect, useMemo } from 'react';
 import { Feature } from 'ol';
 import { Point } from 'ol/geom';
 import { Style, Icon } from 'ol/style';
-import type VectorSource from 'ol/source/Vector';
-import type { Map } from 'ol';
+import { VectorLayerContext } from './vector-layer';
 
 interface Props {
   position: {
     lat: number;
     lng: number;
   };
-  map?: Map;
-  type?: 'marker';
-  vectorSource?: VectorSource;
 }
 
 // 현재 marker는 image가 아닌 css 형태로 사용
-const Marker = ({ position, map, vectorSource }: Props) => {
-  useEffect(() => {
-    if (!(map && position && vectorSource)) return;
-    const marker = new Feature({
+const Marker = ({ position }: Props) => {
+  const { source } = useContext(VectorLayerContext);
+  const marker = useMemo(() => {
+    const initMarker = new Feature({
       geometry: new Point([position.lng, position.lat]),
     });
 
-    marker.setStyle(
+    initMarker.setStyle(
       new Style({
         image: new Icon({
           anchor: [0.5, 1],
@@ -32,12 +28,16 @@ const Marker = ({ position, map, vectorSource }: Props) => {
       })
     );
 
-    vectorSource.addFeature(marker);
+    return initMarker;
+  }, [position.lat, position.lng]);
+
+  useEffect(() => {
+    source.addFeature(marker);
 
     return () => {
-      vectorSource.removeFeature(marker);
+      source.removeFeature(marker);
     };
-  }, [map, position, vectorSource]);
+  }, [marker, position, source]);
 
   return null;
 };
