@@ -1,7 +1,8 @@
-import { useContext, useEffect, useMemo, createContext } from 'react';
+import { useContext, useMemo, createContext } from 'react';
 import { MapContext } from './map';
 import OlVectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
+import useUpdateLayer from './useUpdateLayer';
 
 interface VectorLayerContext {
   source: VectorSource;
@@ -26,13 +27,7 @@ const VectorLayer = ({ zIndex, children }: Props) => {
     return initialVectorLayer;
   }, [vectorSource, zIndex]);
 
-  useEffect(() => {
-    mapContext.map.addLayer(vectorLayer);
-
-    return () => {
-      mapContext.map.removeLayer(vectorLayer);
-    };
-  }, [mapContext.map, vectorLayer]);
+  useUpdateLayer(mapContext.map, vectorLayer);
 
   const value = useMemo(() => ({ source: vectorSource }), [vectorSource]);
 
