@@ -10,7 +10,7 @@ interface MapContext {
   map: OlMap;
 }
 
-const MapContext = createContext({} as MapContext);
+export const MapContext = createContext({} as MapContext);
 
 interface Props {
   initial?: {
@@ -72,9 +72,11 @@ const Map = ({
     };
   }, [map]);
 
+  const value = useMemo(() => ({ map }), [map]);
+
   return (
     <div ref={targetRef} className="relative" style={{ width, height }}>
-      <MapContext.Provider value={{ map }}>{children}</MapContext.Provider>
+      <MapContext.Provider value={value}>{children}</MapContext.Provider>
     </div>
   );
 };
