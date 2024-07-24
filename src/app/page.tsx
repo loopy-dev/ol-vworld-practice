@@ -1,9 +1,14 @@
-import OlMapPage from '../ol-map/ol-map-page';
+import dynamic from 'next/dynamic';
 
+const RLayersPage = dynamic(() => import('~/ol-rlayers/rlayers-page'), {
+  ssr: false,
+});
 const Home = () => {
   return (
     <main>
-      <OlMapPage />
+      <div className="text-lg">Hello, World!</div>
+      <h1 className="text-2xl">Openlayers using RLayers</h1>
+      <RLayersPage />
     </main>
   );
 };
