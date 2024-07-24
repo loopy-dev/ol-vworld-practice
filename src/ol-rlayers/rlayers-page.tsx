@@ -1,45 +1,114 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { RFeature, RLayerVector, RMap, ROverlay } from 'rlayers';
-import 'ol/ol.css';
-import VWorld from './vworld';
 import { fromLonLat } from 'ol/proj';
 import { Point } from 'ol/geom';
 import { Icon, Style } from 'ol/style';
+import VWorld from './vworld';
+import 'ol/ol.css';
+import type { Map } from 'ol';
+import type BaseEvent from 'ol/events/Event';
+
+interface Data {
+  id: string;
+  lonLat: [number, number];
+  open: boolean;
+  content?: string;
+}
 
 const Page = () => {
-  const [lonLats, setLonLats] = useState<Array<[number, number]>>([]);
-  const mapRef = useRef<RMap | null>(null);
+  const [state, setState] = useState<Data[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+  const mapRef = useRef<Map | null>(null);
+  const layerRef = useRef<RLayerVector | null>(null);
 
   useEffect(() => {
-    setLonLats([
-      [126.9778222, 37.5664056],
-      [126.98479293208457, 37.56640619023242],
+    setState([
+      {
+        id: '1',
+        lonLat: [126.9778222, 37.5664056],
+        open: false,
+        content: 'city hall',
+      },
+      {
+        id: '2',
+        lonLat: [126.98479293208457, 37.56640619023242],
+        open: false,
+        content: 'SK Telecom tower',
+      },
     ]);
   }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const map = mapRef.current;
+    if (!map) return;
+
+    const view = map.getView();
+
+    const callback = (e: BaseEvent) => {
+      const zoom = view.getZoom();
+      const overlays = map.getOverlays();
+
+      if (!zoom) return;
+      if (zoom < 11) {
+        overlays.forEach((o) => {
+          const element = o.getElement();
+          if (!element) return;
+          element.style.display = 'none';
+        });
+      } else {
+        overlays.forEach((o) => {
+          const element = o.getElement();
+          if (!element) return;
+          element.style.display = 'block';
+        });
+      }
+    };
+
+    view.on('change:resolution', callback);
+
+    return () => {
+      view.un('change:resolution', callback);
+    };
+  }, [isMounted]);
 
   return (
     <div>
       <RMap
-        ref={mapRef}
         height={'600px'}
-        initial={{ center: fromLonLat([126.9778222, 37.5664056]), zoom: 15 }}
         maxZoom={18}
         minZoom={6}
         projection="EPSG:3857"
         width={'600px'}
+        initial={{
+          center: fromLonLat([126.9778222, 37.5664056]),
+          zoom: 15,
+        }}
+        onClick={(e) => {
+          const hit = e.map.hasFeatureAtPixel(e.pixel);
+
+          if (!hit) {
+            setState((prev) => prev.map((p) => ({ ...p, open: false })));
+          }
+        }}
         onPointerMove={(e) => {
           const hit = e.map.hasFeatureAtPixel(e.pixel);
           e.map.getTargetElement().style.cursor = hit ? 'pointer' : '';
         }}
+        onPostRender={(e) => {
+          setIsMounted(true);
+          mapRef.current = e.map;
+        }}
       >
         <VWorld apiKey={process.env.NEXT_PUBLIC_VWORLD_API_KEY} />
-        <RLayerVector minZoom={11} zIndex={10}>
-          {lonLats.map((lonLat) => {
+        <RLayerVector ref={layerRef} minZoom={11} zIndex={10}>
+          {state.map((s) => {
             return (
               <RFeature
-                key={`${lonLat[0]}-${lonLat[1]}`}
-                geometry={new Point(fromLonLat(lonLat))}
+                key={s.id}
+                geometry={new Point(fromLonLat(s.lonLat))}
                 style={
                   new Style({
                     image: new Icon({
@@ -56,13 +125,52 @@ const Page = () => {
 
                   e.map.getView().fit(geometry.getExtent(), {
                     duration: 250,
-                    maxZoom: zoom > 17 ? zoom : 17,
+                    maxZoom: zoom > 15 ? zoom : 15,
                   });
+
+                  setState((prev) =>
+                    prev.map((p) =>
+                      p.id === s.id
+                        ? { ...p, open: !p.open }
+                        : { ...p, open: false }
+                    )
+                  );
                 }}
               >
-                <ROverlay autoPan className="text-blue-400">
-                  <div>Hello, World!</div>
-                </ROverlay>
+                {s.open && (
+                  <ROverlay>
+                    <div style={{ backgroundColor: 'white', padding: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'end' }}>
+                        <button
+                          style={{
+                            cursor: 'pointer',
+                            border: '1px solid #333',
+                            borderRadius: '6px',
+                            flexShrink: 0,
+                            width: '20px',
+                            height: '20px',
+
+                            fontSize: '14px',
+                            display: 'inline-flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                          onClick={() => {
+                            setState((prev) =>
+                              prev.map((p) =>
+                                p.id === s.id ? { ...p, open: false } : p
+                              )
+                            );
+                          }}
+                        >
+                          X
+                        </button>
+                      </div>
+
+                      <div>{s.content}</div>
+                    </div>
+                  </ROverlay>
+                )}
               </RFeature>
             );
           })}
