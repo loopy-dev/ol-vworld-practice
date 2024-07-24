@@ -5,9 +5,9 @@ import { fromLonLat } from 'ol/proj';
 import { Point } from 'ol/geom';
 import { Icon, Style } from 'ol/style';
 import VWorld from './vworld';
+import { useThrottle } from '~/hooks/useThrottle';
 import 'ol/ol.css';
 import type { Map } from 'ol';
-import type BaseEvent from 'ol/events/Event';
 
 interface Data {
   id: string;
@@ -21,6 +21,30 @@ const Page = () => {
   const [isMounted, setIsMounted] = useState(false);
   const mapRef = useRef<Map | null>(null);
   const layerRef = useRef<RLayerVector | null>(null);
+  const throttle = useThrottle(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const view = map.getView();
+
+    const zoom = view.getZoom();
+    const overlays = map.getOverlays();
+
+    if (!zoom) return;
+    if (zoom < 11) {
+      overlays.forEach((o) => {
+        const element = o.getElement();
+        if (!element) return;
+        element.style.display = 'none';
+      });
+    } else {
+      overlays.forEach((o) => {
+        const element = o.getElement();
+        if (!element) return;
+        element.style.display = 'block';
+      });
+    }
+  }, 200);
 
   useEffect(() => {
     setState([
@@ -47,32 +71,12 @@ const Page = () => {
 
     const view = map.getView();
 
-    const callback = (e: BaseEvent) => {
-      const zoom = view.getZoom();
-      const overlays = map.getOverlays();
-
-      if (!zoom) return;
-      if (zoom < 11) {
-        overlays.forEach((o) => {
-          const element = o.getElement();
-          if (!element) return;
-          element.style.display = 'none';
-        });
-      } else {
-        overlays.forEach((o) => {
-          const element = o.getElement();
-          if (!element) return;
-          element.style.display = 'block';
-        });
-      }
-    };
-
-    view.on('change:resolution', callback);
+    view.on('change:resolution', throttle);
 
     return () => {
-      view.un('change:resolution', callback);
+      view.un('change:resolution', throttle);
     };
-  }, [isMounted]);
+  }, [isMounted, throttle]);
 
   return (
     <div>
