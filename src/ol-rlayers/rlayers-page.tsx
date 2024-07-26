@@ -1,11 +1,13 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
-import { RFeature, RLayerVector, RMap, ROverlay } from 'rlayers';
+import React, { useEffect, useRef, useState } from 'react';
+import { RFeature, RLayerCluster, RMap, ROverlay, RLayerVector } from 'rlayers';
+import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
 import { Point } from 'ol/geom';
-import { Icon, Style } from 'ol/style';
+import CircleStyle from 'ol/style/Circle';
 import VWorld from './vworld';
 import { useThrottle } from '~/hooks/useThrottle';
+
 import 'ol/ol.css';
 import type { Map } from 'ol';
 
@@ -21,6 +23,7 @@ const Page = () => {
   const [isMounted, setIsMounted] = useState(false);
   const mapRef = useRef<Map | null>(null);
   const layerRef = useRef<RLayerVector | null>(null);
+  const clusterRef = useRef<RLayerCluster | null>(null);
   const throttle = useThrottle(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -179,6 +182,76 @@ const Page = () => {
             );
           })}
         </RLayerVector>
+        <RLayerCluster
+          ref={clusterRef}
+          distance={40}
+          maxZoom={11}
+          zIndex={20}
+          style={(feature) => {
+            const size = feature.get('features').length;
+
+            const style = new Style({
+              image: new CircleStyle({
+                radius: 20,
+                stroke: new Stroke({
+                  color: '#fff',
+                }),
+                fill: new Fill({
+                  color: '#3399CC',
+                }),
+              }),
+              text: new Text({
+                text: size.toString(),
+                fill: new Fill({
+                  color: '#fff',
+                }),
+                scale: 1.5,
+              }),
+            });
+
+            return style;
+          }}
+        >
+          {state.map((s) => {
+            return (
+              <RFeature key={s.id} geometry={new Point(fromLonLat(s.lonLat))}>
+                {s.open && (
+                  <ROverlay>
+                    <div style={{ backgroundColor: 'white', padding: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'end' }}>
+                        <button
+                          style={{
+                            cursor: 'pointer',
+                            border: '1px solid #333',
+                            borderRadius: '6px',
+                            flexShrink: 0,
+                            width: '20px',
+                            height: '20px',
+
+                            fontSize: '14px',
+                            display: 'inline-flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                          onClick={() => {
+                            setState((prev) =>
+                              prev.map((p) =>
+                                p.id === s.id ? { ...p, open: false } : p
+                              )
+                            );
+                          }}
+                        >
+                          X
+                        </button>
+                      </div>
+                      <div>{s.content}</div>
+                    </div>
+                  </ROverlay>
+                )}
+              </RFeature>
+            );
+          })}
+        </RLayerCluster>
       </RMap>
     </div>
   );
