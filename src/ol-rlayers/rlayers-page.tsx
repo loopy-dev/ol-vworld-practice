@@ -1,12 +1,13 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { RFeature, RMap, ROverlay } from 'rlayers';
+import { RFeature, RLayerCluster, RMap, ROverlay, RLayerVector } from 'rlayers';
+import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
 import { Point } from 'ol/geom';
+import CircleStyle from 'ol/style/Circle';
 import VWorld from './vworld';
 import { useThrottle } from '~/hooks/useThrottle';
-import { RLayerVector } from 'rlayers';
-import { Icon, Style } from 'ol/style';
+
 import 'ol/ol.css';
 import type { Map } from 'ol';
 
@@ -22,6 +23,7 @@ const Page = () => {
   const [isMounted, setIsMounted] = useState(false);
   const mapRef = useRef<Map | null>(null);
   const layerRef = useRef<RLayerVector | null>(null);
+  const clusterRef = useRef<RLayerCluster | null>(null);
   const throttle = useThrottle(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -180,10 +182,10 @@ const Page = () => {
             );
           })}
         </RLayerVector>
-        {/* <RLayerCluster
+        <RLayerCluster
           ref={clusterRef}
           distance={40}
-          minZoom={11}
+          maxZoom={11}
           zIndex={20}
           style={(feature) => {
             const size = feature.get('features').length;
@@ -249,7 +251,7 @@ const Page = () => {
               </RFeature>
             );
           })}
-        </RLayerCluster> */}
+        </RLayerCluster>
       </RMap>
     </div>
   );
